@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Digit Recognition — AI</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+<div id="bgDigits" class="bg-digits-layer"></div>
+
+<!-- ═══════════════════════════════════════════════
+     LANDING VIEW
+═══════════════════════════════════════════════ -->
+<div id="landingView" class="view active">
+
+  <div class="landing-bg">
+    <div class="grid-lines"></div>
+  </div>
+
+  <div class="landing-topbar">
+    <button class="theme-btn" id="themeBtnLanding">☀</button>
+  </div>
+
+  <div class="landing-content">
+    <div class="badge">AI · Neural Network · MNIST</div>
+    <h1 class="landing-title">Digit<br>Recognition</h1>
+    <p class="landing-sub">A deep learning model that reads handwritten digits in real time. Choose how you want to interact.</p>
+
+    <div class="mode-cards">
+
+      <button class="mode-card" data-mode="draw">
+        <div class="mode-icon">✏️</div>
+        <div class="mode-info">
+          <div class="mode-name">Draw</div>
+          <div class="mode-desc">Sketch a digit on the canvas</div>
+        </div>
+        <div class="mode-arrow">→</div>
+      </button>
+
+      <button class="mode-card" data-mode="upload">
+        <div class="mode-icon">📁</div>
+        <div class="mode-info">
+          <div class="mode-name">Upload Image</div>
+          <div class="mode-desc">Use a photo or scanned image</div>
+        </div>
+        <div class="mode-arrow">→</div>
+      </button>
+
+      <button class="mode-card" data-mode="camera">
+        <div class="mode-icon">📷</div>
+        <div class="mode-info">
+          <div class="mode-name">Live Camera</div>
+          <div class="mode-desc">Point your camera at a digit</div>
+        </div>
+        <div class="mode-arrow">→</div>
+      </button>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     WORK VIEW  (Draw / Upload / Camera)
+═══════════════════════════════════════════════ -->
+<div id="workView" class="view">
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <button class="back-btn" id="backBtn">← Back</button>
+    <span class="topbar-title" id="topbarTitle">Draw</span>
+    <button class="theme-btn" id="themeBtn">☀</button>
+  </header>
+
+  <!-- ── DRAW PANEL ── -->
+  <div id="drawPanel" class="panel">
+    <div class="canvas-outer">
+      <div class="canvas-glow"></div>
+      <canvas id="canvas" width="280" height="280"></canvas>
+    </div>
+    <div class="draw-controls">
+      <label class="brush-label">Brush</label>
+      <input type="range" id="brush" min="6" max="40" value="18"/>
+      <button class="ctrl-btn" id="undoBtn">↩</button>
+      <button class="ctrl-btn danger" id="clearBtn">Clear</button>
+    </div>
+    <button class="predict-btn" id="predictCanvas">Analyse →</button>
+  </div>
+
+  <!-- ── UPLOAD PANEL ── -->
+  <div id="uploadPanel" class="panel" style="display:none;">
+    <label class="drop-zone" id="dropZone">
+      <div class="drop-icon">📂</div>
+      <div class="drop-text">Click or drag an image here</div>
+      <div class="drop-sub">JPG, PNG, WEBP — any handwritten digit</div>
+      <input type="file" id="uploadInput" accept="image/*"/>
+    </label>
+    <div id="uploadPreviewWrap" style="display:none;">
+      <img id="uploadPreview" alt="preview"/>
+      <button class="predict-btn" id="predictUpload">Analyse →</button>
+    </div>
+  </div>
+
+  <!-- ── CAMERA PANEL ── -->
+  <div id="cameraPanel" class="panel" style="display:none;">
+    <div class="camera-area">
+      <video id="video" autoplay playsinline muted></video>
+      <img id="cameraPreview" alt="captured" style="display:none;"/>
+      <canvas id="cameraCanvas" style="display:none;"></canvas>
+      <div class="camera-hint" id="camStatus">Open camera, hold up a digit, then capture</div>
+    </div>
+    <div class="camera-controls">
+      <button class="ctrl-btn" id="startCamera">📷 Open Camera</button>
+      <button class="ctrl-btn accent" id="captureBtn" disabled>📸 Capture &amp; Analyse</button>
+    </div>
+  </div>
+
+  <!-- ── RESULT PANEL ── -->
+  <div id="resultPanel" style="display:none;">
+
+    <div class="result-main">
+      <div class="result-digit" id="digit">—</div>
+      <div class="result-meta">
+        <div class="result-label">Predicted digit</div>
+        <div class="result-conf" id="confidence">—</div>
+        <div class="conf-track"><div class="conf-fill" id="confFill"></div></div>
+      </div>
+    </div>
+
+    <!-- Debug: what model sees -->
+    <div class="debug-wrap" id="debugWrap" style="display:none;">
+      <span class="debug-label">Model input (28×28)</span>
+      <img id="debugImg" alt="model input"/>
+    </div>
+
+    <!-- Probability chart -->
+    <div class="chart-section">
+      <div class="chart-title">All digit probabilities</div>
+      <div id="probBars"></div>
+    </div>
+
+    <!-- Feedback -->
+    <div class="feedback-row">
+      <span class="feedback-label">Was this correct?</span>
+      <button class="fb-btn" id="fbYes">👍 Yes</button>
+      <button class="fb-btn" id="fbNo">👎 No</button>
+    </div>
+    <div id="streakBadge" style="display:none;"></div>
+
+    <!-- History -->
+    <div class="history-section" id="histSection" style="display:none;">
+      <div class="history-title">Recent</div>
+      <div class="history-strip" id="histStrip"></div>
+    </div>
+
+    <button class="retry-btn" id="retryBtn">Try another →</button>
+
+  </div>
+
+</div>
+
+<!-- Confetti container -->
+<div id="confettiLayer"></div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
